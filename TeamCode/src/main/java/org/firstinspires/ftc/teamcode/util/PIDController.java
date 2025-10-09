@@ -9,7 +9,7 @@ public class PIDController {
 
     private double integral;
     private double previousError;
-    private ElapsedTime elapsedTime;
+    private final ElapsedTime elapsedTime;
 
     private double previousTime;
 

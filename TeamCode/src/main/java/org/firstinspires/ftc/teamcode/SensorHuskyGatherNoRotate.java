@@ -36,15 +36,12 @@ import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.robotcore.internal.system.Deadline;
 import org.firstinspires.ftc.teamcode.util.PIDController;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @TeleOp(name = "HL Gather Without Rotating", group = "Auto")
@@ -54,7 +51,7 @@ public class SensorHuskyGatherNoRotate extends LinearOpMode {
 
     private double direction;
 
-    double stop_at_width = 150f;
+    double stopAtWidth = 160f;
 
     HuskyLens huskyLens;
 
@@ -78,8 +75,8 @@ public class SensorHuskyGatherNoRotate extends LinearOpMode {
         intakeBack.setDirection(DcMotor.Direction.FORWARD);
 
         // Motor Powers
-        double frontPower = 0.5f;
-        double backPower = 0.5f;
+        double frontPower = 1.0f;
+        double backPower = 1.0f;
 
         leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
@@ -125,7 +122,7 @@ public class SensorHuskyGatherNoRotate extends LinearOpMode {
 
             HuskyLens.Block[] blocks = huskyLens.blocks();
 
-            HuskyLens.Block target_block = Stream.of(blocks)
+            HuskyLens.Block targetBlock = Stream.of(blocks)
                     .filter(b -> b.id == target_id)
                     .max(Comparator.comparingInt(b -> b.width * b.height))
                     .orElse(null);
@@ -146,12 +143,12 @@ public class SensorHuskyGatherNoRotate extends LinearOpMode {
                 intakeBack.setPower(0.0f);
             }
 
-            if (blocks.length > 0 && target_block != null) {
+            if (blocks.length > 0 && targetBlock != null) {
                 run_intake = true;
 
-                direction = strafePID.calculate(0f, ((target_block.x - stop_at_width) / stop_at_width));
+                direction = strafePID.calculate(0f, ((targetBlock.x - stopAtWidth) / stopAtWidth));
                 double SPEED = 1f;
-                double forward_dir = SPEED * (1f - (target_block.width / 170f));
+                double forward_dir = SPEED * (1f - (targetBlock.width / 170f));
                 HuskyLens.Block lastBlock = blocks[blocks.length - 1];
                 lastBlockData = lastBlock.toString();
                 lastBlockId = lastBlock.id;
@@ -166,7 +163,7 @@ public class SensorHuskyGatherNoRotate extends LinearOpMode {
                     powers[1] /= max;
                 }
 
-                if (target_block.width > stop_at_width) {
+                if (targetBlock.width > stopAtWidth) {
                     powers[0] = 0;
                     powers[1] = 0;
                 }
@@ -176,7 +173,7 @@ public class SensorHuskyGatherNoRotate extends LinearOpMode {
                 leftFrontDrive.setPower(powers[1]); // + forward_dir);
                 rightFrontDrive.setPower(powers[1]); // - forward_dir);
             } else {
-                run_intake = false;
+                //run_intake = false;
 
                 leftBackDrive.setPower(0);
                 rightBackDrive.setPower(0);
