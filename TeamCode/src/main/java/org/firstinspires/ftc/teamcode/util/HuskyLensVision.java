@@ -16,6 +16,7 @@ public class HuskyLensVision {
 
     HuskyLens huskyLens;
     PIDController strafePID;
+    PIDController turnController;
     private HardwareMap hardwareMap;
 
     public void init(HardwareMap hardwareMap, HuskyLens.Algorithm recognitionMode) {
@@ -23,6 +24,7 @@ public class HuskyLensVision {
         huskyLens = this.hardwareMap.get(HuskyLens.class, "eyeball");
 
         strafePID = new PIDController(1.35, 0, 0.12, -1, 1);
+        turnController = new PIDController(0.075, 0, 0.025, -15, 15); // TODO: Tune please!
 
         huskyLens.selectAlgorithm(recognitionMode);
     }
@@ -78,5 +80,9 @@ public class HuskyLensVision {
             return 0.0f;
         }
         return (1f - (targetBlock.width / stopAtWidth));
+    }
+
+    public double calculateRotation(Block targetBlock, double center) { // Pass in targetBlock and the center of the view, by default it is 160f
+        return turnController.calculate(0f, ((targetBlock.x - center) / center));
     }
 }
