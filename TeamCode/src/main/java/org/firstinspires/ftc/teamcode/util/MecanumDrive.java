@@ -31,7 +31,7 @@ public class MecanumDrive {
         rightBackDrive.setPower(rightBack);
     }
 
-    public void driveXYZ(double strafe, double forward, double heading) {
+    public void driveXZH(double strafe, double forward, double heading) {
         leftFrontDrive.setPower(-heading + strafe + forward);
         leftBackDrive.setPower(-heading - strafe + forward);
         rightFrontDrive.setPower(heading + strafe + forward);

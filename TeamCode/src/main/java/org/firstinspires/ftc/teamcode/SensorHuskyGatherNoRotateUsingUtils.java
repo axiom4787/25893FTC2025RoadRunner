@@ -57,8 +57,8 @@ public class SensorHuskyGatherNoRotateUsingUtils extends LinearOpMode {
         while (opModeIsActive()) {
             HuskyLens.Block target_block = vision.getTargetBlock(1);
 
-            intake.setIntake(0.0);
             if (target_block != null) {
+                intake.setShooter(1.0);
                 intake.setIntake(1.0);
 
                 double direction = vision.calculateStrafe(target_block, 160f);
