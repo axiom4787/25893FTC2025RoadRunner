@@ -31,7 +31,7 @@ public class TuneGetRealPos extends LinearOpMode {
                 telemetry.addData("Width", block.width);
                 telemetry.addData("Height", block.height);
                 telemetry.addData("Break", "-------------------");
-                double[] realPos = huskylens.getRealPos(block);
+                double[] realPos = huskylens.getRealPos(block, 6.5f);
                 telemetry.addData("Real X", realPos[0]);
                 telemetry.addData("Real X", realPos[1]);
                 telemetry.addData("Real X", realPos[2]);

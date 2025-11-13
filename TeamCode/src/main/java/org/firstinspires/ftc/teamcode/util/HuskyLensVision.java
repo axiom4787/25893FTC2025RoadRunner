@@ -39,7 +39,25 @@ public class HuskyLensVision {
         IMU.Parameters imuParameters = new IMU.Parameters(
                 new RevHubOrientationOnRobot(
                         RevHubOrientationOnRobot.LogoFacingDirection.UP,
-                        RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
+                        RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD
+                )
+        );
+        imu.initialize(imuParameters);
+
+        huskyLens.selectAlgorithm(recognitionMode);
+    }
+    public void init(HardwareMap hardwareMap, HuskyLens.Algorithm recognitionMode, String deviceName) {
+        this.hardwareMap = hardwareMap;
+        huskyLens = this.hardwareMap.get(HuskyLens.class, deviceName);
+
+        strafePID = new PIDController(1.35, 0, 0.12, -1, 1);
+        turnController = new PIDController(0.075, 0, 0.025, -15, 15); // TODO: Tune please!
+
+        imu = hardwareMap.get(IMU.class, "imu");
+        IMU.Parameters imuParameters = new IMU.Parameters(
+                new RevHubOrientationOnRobot(
+                        RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                        RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD
                 )
         );
         imu.initialize(imuParameters);
@@ -56,6 +74,15 @@ public class HuskyLensVision {
                 .orElse(null);
 
         return target_block;
+    }
+    public Block getTargetBlockRaw() {
+        Block[] blocks = huskyLens.blocks();
+
+
+        return Stream.of(blocks)
+                .max(Comparator.comparingInt(b -> b.width * b.height))
+                .orElse(null);
+
     }
 
 
@@ -101,7 +128,8 @@ public class HuskyLensVision {
     }
 
     public double calculateRotation(Block targetBlock, double center) { // Pass in targetBlock and the center of the view, by default it is 160f
-        return turnController.calculate(0f, ((targetBlock.x - center) / center));
+        //return turnController.calculate(0f, ((targetBlock.x - center) / center));
+        return ((targetBlock.x - center) / center);
     }
 
     // Convert a targetBlock into approx world coordinates relative to the view

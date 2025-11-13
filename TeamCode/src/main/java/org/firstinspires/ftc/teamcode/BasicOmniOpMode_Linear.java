@@ -29,10 +29,19 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import android.view.ViewGroup;
+
+import com.acmerobotics.roadrunner.Pose2d;
+import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.teamcode.util.*;
+import org.firstinspires.ftc.teamcode.util.MecanumDrive;
 
 /*
  * This file contains an example of a Linear "OpMode".
@@ -68,9 +77,17 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
     // Declare OpMode members for each of the 4 motors.
     private final ElapsedTime runtime = new ElapsedTime();
+    HuskyLensVision ballVision = new HuskyLensVision();
+    HuskyLensVision tagVision = new HuskyLensVision();
+    MecanumDrive drive = new MecanumDrive();
+    RoadRun roadRunner = new RoadRun();
 
     @Override
     public void runOpMode() {
+        ballVision.init(hardwareMap, HuskyLens.Algorithm.COLOR_RECOGNITION);
+        tagVision.init(hardwareMap, HuskyLens.Algorithm.TAG_RECOGNITION, "eyeball2");
+        drive.init(hardwareMap);
+        roadRunner.init(hardwareMap, new Pose2d(0,0,0));
 
         // Initialize the hardware variables. Note that the strings used here must correspond
         // to the names assigned during the robot configuration step on the DS or RC devices.
@@ -78,6 +95,14 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         DcMotor leftBackDrive = hardwareMap.get(DcMotor.class, "leftBack");
         DcMotor rightFrontDrive = hardwareMap.get(DcMotor.class, "rightFront");
         DcMotor rightBackDrive = hardwareMap.get(DcMotor.class, "rightBack");
+
+        DcMotor shooter = hardwareMap.get(DcMotor.class, "shooter");
+        shooter.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        CRServo intake = hardwareMap.get(CRServo.class, "intake");
+        CRServo push = hardwareMap.get(CRServo.class, "push");
+        intake.setDirection(DcMotorSimple.Direction.REVERSE);
+        push.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // ########################################################################################
         // !!!            IMPORTANT Drive Information. Test your motor directions.            !!!!!
@@ -91,8 +116,8 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         // Keep testing until ALL the wheels move the robot forward when you push the left joystick forward.
         leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
         leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
-        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
-        rightBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
 
         // Wait for the game to start (driver presses START)
         telemetry.addData("Status", "Initialized");
@@ -103,6 +128,8 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
+            roadRunner.update();
+
             double max;
 
             // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
@@ -112,9 +139,9 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 
             // Combine the joystick requests for each axis-motion to determine each wheel's power.
             // Set up a variable for each drive wheel to save the power level for telemetry.
-            double leftFrontPower  = axial + lateral + yaw;
+            double leftFrontPower  = axial - lateral + yaw;
             double rightFrontPower = axial - lateral - yaw;
-            double leftBackPower   = axial - lateral + yaw;
+            double leftBackPower   = axial + lateral + yaw;
             double rightBackPower  = axial + lateral - yaw;
 
             // Normalize the values so no wheel power exceeds 100%
@@ -144,6 +171,53 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
 //            leftBackPower   = gamepad1.a ? 1.0 : 0.0;  // A gamepad
 //            rightFrontPower = gamepad1.y ? 1.0 : 0.0;  // Y gamepad
 //            rightBackPower  = gamepad1.b ? 1.0 : 0.0;  // B gamepad
+
+            push.setPower(0.0);
+
+            if (gamepad1.right_trigger > 0.1) {
+                intake.setPower(1.0);
+                push.setPower(1.0);
+            } else {
+                intake.setPower(0.0);
+            }
+            if (gamepad1.b) {
+                push.setPower(0.0);
+            }
+            if (gamepad1.left_trigger > 0.1) {
+                shooter.setPower(1.0);
+                push.setPower(1.0);
+            } else {
+                shooter.setPower(0.0);
+            }
+            if (gamepad1.right_bumper) {
+
+                HuskyLens.Block block = ballVision.getTargetBlockRaw();
+                if (block != null) {
+                    double pid = (160f - block.x) / 160f;
+                    double forward = 1 - Math.abs(pid);
+
+                    leftFrontPower = pid - forward;
+                    leftBackPower = pid - forward;
+                    rightFrontPower = -pid - forward;
+                    rightBackPower = -pid - forward;
+                }
+
+            }
+            if (gamepad1.left_bumper) {
+
+                HuskyLens.Block block = tagVision.getTargetBlockRaw();
+                if (block != null) {
+                    double pid = (160f - block.x) / 160f;
+
+                    leftFrontPower = -pid;
+                    leftBackPower = pid;
+                    rightFrontPower = -pid;
+                    rightBackPower = pid;
+                }
+            }
+            if (gamepad1.dpad_left) {
+                roadRunner.runTo(new Pose2d(5.0, 0.0, 0.0), Math.tan(-140.0));
+            }
 
             // Send calculated power to wheels
             leftFrontDrive.setPower(leftFrontPower);
